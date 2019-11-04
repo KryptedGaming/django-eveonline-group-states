@@ -8,7 +8,7 @@ with open(os.path.join(os.path.dirname(__file__), 'README.md')) as readme:
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
-    name='REPLACE_NAME',
+    name='django-group-states',
     version='1.0.0',
     packages=find_packages(),
     include_package_data=True,
@@ -16,9 +16,9 @@ setup(
     description='A simple Django package.',
     long_description=README,
     long_description_content_type='text/markdown',
-    url='REPLACE_URL',
-    author='REPLACE_AUTHOR',
-    author_email='REPLACE_EMAIL,
+    url='https://github.com/KryptedGaming/django-group-states.git',
+    author='porowns',
+    author_email='porowns@gmail.com,
     classifiers=[
         'Environment :: Web Environment',
         'Framework :: Django',
