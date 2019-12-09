@@ -3,7 +3,8 @@ from django_eveonline_group_states.models import EveUserState, EveGroupState
 from django.dispatch import receiver
 from django.db.models.signals import m2m_changed, pre_delete, post_save
 from django.db import transaction
-from django_eveonline_group_states.tasks import update_user_state, verify_user_state_groups
+from django_eveonline_group_states.tasks import verify_user_state_and_groups
+from django.core.exceptions import PermissionDenied
 
 import logging
 logger = logging.getLogger(__name__)
@@ -23,11 +24,7 @@ def global_user_add(sender, **kwargs):
     transaction.on_commit(call)
 
 @receiver(m2m_changed, sender=User.groups.through)
-def user_group_change_update_state(sender, **kwargs):
+def user_group_change_verify_state(sender, **kwargs):
     django_user = kwargs.get('instance')
-    update_user_state.apply_async(args=[django_user.pk])
-
-@receiver(post_save, sender=EveUserState)
-def user_state_change_verify_groups(sender, **kwargs):
-    state = kwargs.get('instance')
-    verify_user_state_groups.apply_async(args=[state.user.pk])
+    if "post" in kwargs.get('action'):
+        verify_user_state_and_groups.apply_async(args=[django_user.pk])

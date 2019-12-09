@@ -25,6 +25,12 @@ class EveUserState(models.Model):
     def __str__(self):
         return "<%s:%s>" % (self.user.username, self.state.name)
 
+    def get_all_enabling_groups(self):
+        default_group_pks = list(self.state.default_groups.values_list('pk', flat=True))
+        enabled_group_pks = list(self.state.enabling_groups.values_list('pk', flat=True))
+        group_pks = default_group_pks + enabled_group_pks
+        return Group.objects.filter(pk__in=group_pks)
+
     def valid(self):
         if self.state.priority == -1:
             return True 

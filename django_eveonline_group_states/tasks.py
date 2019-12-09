@@ -44,19 +44,15 @@ def update_user_state(user_id):
     logger.debug("Current default state: %s" % default_state)
 
 
+    pre_state = user_state
     if user_state and user_state.valid():
         logger.debug("Searching for higher state for %s" % user)
         user_state.state = user_state.get_higher_qualifying_state()
         logger.debug("Highest state: %s" % user_state.state)
-        user_state.save()
     elif user_state and not user_state.valid():
-        user_state.state = EveGroupState.objects.get(name="StateA")
-        user_state.save()
         logger.debug("Searching for lower state for %s" % user)
         user_state.state = user_state.get_lower_qualifying_state()
         logger.debug("Lowest state: %s" % user_state.state)
-        user_state.save()
-
         logger.debug(user.state)
     elif not user_state:
         logger.debug("b3")
@@ -67,6 +63,11 @@ def update_user_state(user_id):
             EveUserState.objects.create(user=user, state=default_state)
         elif user_state:
             user_state.delete()
+
+    if pre_state != user_state:
+        logger.debug("State change: %s to %s" % (pre_state, user_state))
+        user_state.save() 
+
 @shared_task
 def verify_user_state_groups(user_id):
     user = User.objects.get(pk=user_id)
@@ -88,3 +89,7 @@ def verify_user_state_groups(user_id):
             user.groups.remove(group)
 
     
+@shared_task
+def verify_user_state_and_groups(user_id):
+    update_user_state(user_id)
+    verify_user_state_groups.apply_async(args=[user_id])
