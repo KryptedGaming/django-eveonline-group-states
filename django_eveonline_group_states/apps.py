@@ -9,8 +9,11 @@ class DjangoGroupStatesConfig(AppConfig):
         from django.contrib.auth.models import User, Group
         from django.db.models.signals import m2m_changed, pre_delete, post_save
         from .models import EveUserState, EveGroupState
-        from .signals import global_user_add, user_group_change_verify_state
+        from django_eveonline_connector.models import EveToken
+        from .signals import global_user_add, user_group_change_verify_state, user_state_update, user_token_update
         post_save.connect(global_user_add, sender=User)
+        post_save.connect(user_state_update, sender=EveUserState)
+        post_save.connect(user_token_update, sender=EveToken)
         m2m_changed.connect(user_group_change_verify_state, sender=User.groups.through)
         
         try:

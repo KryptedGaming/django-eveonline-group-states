@@ -44,7 +44,7 @@ def update_user_state(user_id):
     logger.debug("Current default state: %s" % default_state)
 
 
-    pre_state = user_state
+    pre_state = user_state.state
     if user_state and user_state.valid():
         logger.debug("Searching for higher state for %s" % user)
         user_state.state = user_state.get_higher_qualifying_state()
@@ -64,8 +64,8 @@ def update_user_state(user_id):
         elif user_state:
             user_state.delete()
 
-    if pre_state != user_state:
-        logger.debug("State change: %s to %s" % (pre_state, user_state))
+    if pre_state != user_state.state:
+        logger.debug("State change: %s to %s" % (pre_state, user_state.state))
         user_state.save() 
 
 @shared_task
