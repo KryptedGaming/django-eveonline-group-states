@@ -35,7 +35,7 @@ def user_state_update(sender, **kwargs):
 def user_token_update(sender, **kwargs):
     def call():
         token = kwargs.get('instance')
-        verify_user_state_and_groups.apply_asrnc(args=[token.user.pk])
+        verify_user_state_and_groups.apply_async(args=[token.user.pk])
     transaction.on_commit(call)
 
 @receiver(m2m_changed, sender=User.groups.through)
