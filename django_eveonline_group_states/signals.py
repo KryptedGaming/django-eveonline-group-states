@@ -28,18 +28,18 @@ def global_user_add(sender, **kwargs):
 def user_state_update(sender, **kwargs):
     def call():
         user = kwargs.get('instance')
-        verify_user_state_groups.apply_async(args=[user.pk])
+        verify_user_state_groups.apply_async(args=[user.pk], countdown=15)
     transaction.on_commit(call)
 
 @receiver(post_save, sender=EveToken)
 def user_token_update(sender, **kwargs):
     def call():
         token = kwargs.get('instance')
-        verify_user_state_and_groups.apply_async(args=[token.user.pk])
+        verify_user_state_and_groups.apply_async(args=[token.user.pk], countdown=15)
     transaction.on_commit(call)
 
 @receiver(m2m_changed, sender=User.groups.through)
 def user_group_change_verify_state(sender, **kwargs):
     django_user = kwargs.get('instance')
     if "post" in kwargs.get('action'):
-        verify_user_state_and_groups.apply_async(args=[django_user.pk])
+        verify_user_state_and_groups.apply_async(args=[django_user.pk], countdown=15)
