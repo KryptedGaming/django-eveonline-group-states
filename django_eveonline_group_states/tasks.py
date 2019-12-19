@@ -44,7 +44,9 @@ def update_user_state(user_id):
     logger.debug("Current default state: %s" % default_state)
 
 
-    pre_state = user_state.state
+    if user_state:
+        pre_state = user_state.state
+
     if user_state and user_state.valid():
         logger.debug("Searching for higher state for %s" % user)
         user_state.state = user_state.get_higher_qualifying_state()
@@ -55,7 +57,6 @@ def update_user_state(user_id):
         logger.debug("Lowest state: %s" % user_state.state)
         logger.debug(user.state)
     elif not user_state:
-        logger.debug("b3")
         if default_state:
             EveUserState.objects.create(user=user, state=default_state)
     else:
