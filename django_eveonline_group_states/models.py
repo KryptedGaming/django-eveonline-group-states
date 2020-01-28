@@ -35,28 +35,19 @@ class EveUserState(models.Model):
         if self.state.priority == -1:
             return True 
 
-        for group in self.user.groups.all():
-            if group in self.state.qualifying_groups.all():
-                return True 
-        
-        if not self.user.eve_tokens:
-            return False 
+        if self.state.qualifying_groups.all():
+            if (self.user.groups.all() & self.state.qualifying_groups.all()).count() == 0:
+                return False # user has no groups in qualifying groups
 
-        for token in self.user.eve_tokens.all():
-            character = token.evecharacter
-            corporation = character.corporation
-            if corporation:
-                alliance = character.corporation.alliance
-            else:
-                alliance = None
-        
-            if corporation in self.state.qualifying_corporations.all():
-                return True 
-            
-            if alliance and alliance in self.state.qualifying_alliances.all():
-                return True 
+        if self.state.qualifying_corporations.all():     
+            if not EveToken.objects.filter(user=self.user, evecharacter__corporation__in=self.state.qualifying_corporations.all()).exists():
+                return False # no tokens exist that are in the qualifying corporations
 
-        return False 
+        if self.state.qualifying_alliances.all():
+            if not EveToken.objects.filter(user=self.user, evecharacter__corporation__alliance_in=self.state.qualifying_alliances.all()).exists():
+                return False # no tokens exist that are in the qualifying alliances
+
+        return True # assumes we're in an open state
     
     def get_higher_qualifying_state(self):
         states = EveGroupState.objects.filter(priority__gte=self.state.priority).order_by('-priority')
