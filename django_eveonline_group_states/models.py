@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User, Group
-from django_eveonline_connector.models import EveCorporation, EveAlliance
+from django_eveonline_connector.models import EveCorporation, EveAlliance, EveToken
 
 import logging
 logger = logging.getLogger(__name__)
