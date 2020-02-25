@@ -1,6 +1,6 @@
 from django.test import TestCase
 from django.contrib.auth.models import User, Group
-from django_eveonline_connector.models import *
+from django_eveonline_connector.models import EveToken, EveCharacter, EveCorporation, EveAlliance
 from django_eveonline_group_states.models import EveGroupState, EveUserState
 from django_eveonline_group_states.tasks import *
 
@@ -8,56 +8,36 @@ from django_eveonline_group_states.tasks import *
 class EveUserStateModelTests(TestCase):
     def setUp(self):
         User.objects.create_user(username="ModelTest", password="TestPassword", email="test")
-        User.objects.create_user(username="ModelTestFail", password="TestPassword", email="test")
-        User.objects.create_user(username="ModelTestHigher", password="TestPassword", email="test")
-        User.objects.create_user(username="ModelTestLower", password="TestPassword", email="test")
         Group.objects.create(name="ModelTest")
         EveToken.objects.create(user=User.objects.all()[0])
         EveCharacter.objects.create(name="ModelTest", external_id=0, token=EveToken.objects.all()[0])
         EveCorporation.objects.create(name="ModelTest", external_id=1)
         EveAlliance.objects.create(name="ModelTest", external_id=2)
-        EveGroupState.objects.create(name="ModelTestState", priority=-2)
-
-        group_a = Group.objects.create(name="QualifyingGroupA")
-        group_b = Group.objects.create(name="QualifyingGroupB")
-        group_c = Group.objects.create(name="QualifyingGroupC")
-        state_a = EveGroupState.objects.create(name="StateA", priority=-1)
-        state_b = EveGroupState.objects.create(name="StateB", priority=10)
-        state_c = EveGroupState.objects.create(name="StateC", priority=20)
-        state_a.qualifying_groups.add(group_a)
-        state_b.qualifying_groups.add(group_b)
-        state_c.qualifying_groups.add(group_c)
-
-    def tearDown(self):
-        User.objects.all().delete()
-        Group.objects.all().delete()
-        EveToken.objects.all().delete()
-        EveCharacter.objects.all().delete()
-        EveCorporation.objects.all().delete()
-        EveAlliance.objects.all().delete()
-        EveGroupState.objects.all().delete()
-        
+        EveGroupState.objects.create(name="DefaultState", priority=-1)
+        EveGroupState.objects.create(name="TestState", priority=1)
+        EveGroupState.objects.create(name="TestStateHigher", priority=2)
+        EveGroupState.objects.create(name="TestStateLower", priority=0)
 
     def test_valid(self):
         print("test_qualify: starting test")
+        
         user = User.objects.get(username="ModelTest")
         group = Group.objects.get(name="ModelTest")
         character = EveCharacter.objects.all()[0]
         corporation = EveCorporation.objects.all()[0]
         alliance = EveAlliance.objects.all()[0]
-        state = EveGroupState.objects.all()[0]
+        state = EveGroupState.objects.get(name="TestState")
         user_state = EveUserState.objects.create(user=user, state=state)
 
         # test qualifying group
-        self.assertFalse(user.state.valid())
+        user_state.state.qualifying_groups.add(group)
+        self.assertFalse(user_state.valid())
         user.groups.add(group)
-        state.qualifying_groups.add(group)
-        self.assertTrue(user.state.valid())
-        state.qualifying_groups.remove(group)
-        user.groups.remove(group)
+        self.assertTrue(user_state.valid())
 
         # test qualifying corporation
-        self.assertFalse(user.state.valid())
+        user_state.state.qualifying_corporations.add(corporation)
+        self.assertFalse(user_state.valid())
         character.corporation = corporation
         character.save()
         state.qualifying_corporations.add(corporation)
@@ -65,29 +45,52 @@ class EveUserStateModelTests(TestCase):
         state.qualifying_corporations.remove(corporation)
 
         # test qualifying alliance
-        self.assertFalse(user.state.valid())
+        user_state.state.qualifying_alliances.add(alliance)
+        self.assertFalse(user_state.valid())
         corporation.alliance = alliance 
         corporation.save()
-        state.qualifying_alliances.add(alliance)
         self.assertTrue(user.state.valid())
 
-        # test no token failure
-        user = User.objects.get(username="ModelTestFail")
-        user_state = EveUserState.objects.create(user=user, state=state)
-        self.assertFalse(user.state.valid())
+        user_state.delete()
         
     def test_get_higher_qualifying_state(self):
-        user = User.objects.get(username="ModelTestHigher")
-        user.groups.clear()
-        user.groups.add(Group.objects.get(name="QualifyingGroupB"))
-        user_state = EveUserState.objects.create(user=user, state=EveGroupState.objects.get(name="StateA"))
-        self.assertTrue(user_state.get_higher_qualifying_state().name == "StateB")
+        user = User.objects.get(username="ModelTest")
+        group = Group.objects.get(name="ModelTest")
+        character = EveCharacter.objects.all()[0]
+        corporation = EveCorporation.objects.all()[0]
+        alliance = EveAlliance.objects.all()[0]
+        state_lower = EveGroupState.objects.get(name="TestState")
+        state_higher = EveGroupState.objects.get(name="TestStateHigher")
+
+        user_state = EveUserState.objects.create(user=user, state=state_lower)
+        
+        # add qualifying group
+        state_lower.qualifying_groups.add(group)
+        state_higher.qualifying_groups.add(group)
+        user.groups.add(group)
+
+        self.assertTrue(user_state.get_higher_qualifying_state().name == "TestStateHigher")
+
+        # clean up 
+        state_lower.qualifying_groups.remove(group)
+        state_higher.qualifying_groups.remove(group)
+        user.groups.remove(group)
     
     def test_get_lower_qualifying_state(self):
-        user = User.objects.get(username="ModelTestLower")
-        user.groups.clear()
-        user_state = EveUserState.objects.create(user=user, state=EveGroupState.objects.get(name="StateB"))
-        self.assertTrue(user_state.get_lower_qualifying_state().name == "StateA")
+        user = User.objects.get(username="ModelTest")
+        group = Group.objects.get(name="ModelTest")
+        character = EveCharacter.objects.all()[0]
+        corporation = EveCorporation.objects.all()[0]
+        alliance = EveAlliance.objects.all()[0]
+        state_lower = EveGroupState.objects.get(name="TestState")
+        state_higher = EveGroupState.objects.get(name="TestStateHigher")
+
+        user_state = EveUserState.objects.create(user=user, state=state_higher)
+        
+        # add qualifying group
+        state_higher.qualifying_groups.add(group)
+
+        self.assertTrue(user_state.get_lower_qualifying_state().name == "TestState")
         
         
         

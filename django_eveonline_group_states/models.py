@@ -44,7 +44,7 @@ class EveUserState(models.Model):
                 return False # no tokens exist that are in the qualifying corporations
 
         if self.state.qualifying_alliances.all():
-            if not EveToken.objects.filter(user=self.user, evecharacter__corporation__alliance_in=self.state.qualifying_alliances.all()).exists():
+            if not EveToken.objects.filter(user=self.user, evecharacter__corporation__alliance__in=self.state.qualifying_alliances.all()).exists():
                 return False # no tokens exist that are in the qualifying alliances
 
         return True # assumes we're in an open state
