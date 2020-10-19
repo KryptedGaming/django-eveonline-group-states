@@ -9,7 +9,7 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     name='django-eveonline-group-states',
-    version='1.0.0',
+    version=__import__('django_eveonline_group_states').__version__,
     packages=find_packages(),
     include_package_data=True,
     license='MIT License',

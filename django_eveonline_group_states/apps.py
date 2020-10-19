@@ -1,8 +1,10 @@
-from django.apps import AppConfig
+from django.apps import AppConfig, apps
 import sys 
 
 class DjangoGroupStatesConfig(AppConfig):
     name = 'django_eveonline_group_states'
+    package_name = __import__(name).__package_name__
+    version = __import__(name).__version__
     verbose_name = "States"
 
     def ready(self):
@@ -33,6 +35,28 @@ class DjangoGroupStatesConfig(AppConfig):
                     ).save()
         except Exception as e:
             print(e)
+
+        if apps.is_installed('packagebinder'):
+            from packagebinder.exceptions import BindException
+            try:
+                bind = apps.get_app_config('packagebinder').get_bind_object(
+                    self.package_name, self.version)
+            except BindException as e:
+                return
+            # Required Task Bindings
+            bind.add_required_task(
+                name="EVE States: Verify User States",
+                task="django_eveonline_group_states.tasks.update_all_user_states",
+                interval=5,
+                interval_period="minutes",
+            )
+            bind.add_required_task(
+                name="EVE States: Verify User Groups",
+                task="django_eveonline_group_states.tasks.verify_all_user_state_groups",
+                interval=30,
+                interval_period="minutes",
+            )
+            bind.save()
 
 
         
