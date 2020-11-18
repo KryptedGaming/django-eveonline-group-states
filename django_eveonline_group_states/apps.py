@@ -57,6 +57,9 @@ class DjangoGroupStatesConfig(AppConfig):
                 bind.save()
             except BindException as e:
                 return
+            except Exception as e:
+                print(e)
+                return
             
 
 
