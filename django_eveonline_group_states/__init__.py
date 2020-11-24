@@ -7,7 +7,7 @@
 
 __title__ = 'Django EVE Online Group States'
 __package_name__ = 'django-eveonline-group-states'
-__version__ = '1.1.2'
+__version__ = '1.2.0'
 __author__ = 'Krypted Gaming'
 __license__ = 'MIT License'
 __copyright__ = 'Copyright © 2017-2020 Krypted Gaming. All rights reserved.'
